@@ -43,11 +43,13 @@
       <section class="welcome card"><div><span class="kicker">🎀 CARTELA DIGITAL</span><h1 id="welcomeName">Olá, convidado!</h1><p>Seu número da sorte chegou! 🌟</p></div><div class="round-tag">Rodada <b id="guestRound">01</b></div></section>
       <section class="guest-board card">
        <div class="board-heading"><span>🎱 MINHA CARTELA</span><span id="guestGameStatus" class="status-pill">Aguardando</span></div>
+       <div id="guestRuleBadge" class="bingo-rule-badge" aria-live="polite">🏆 Regra da rodada: linha, coluna ou diagonal</div>
        <div class="bingo-card-frame">
         <div class="bingo-card-head"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
         <div id="bingoCells" class="bingo-cells" aria-label="Cartela de bingo de 5 por 5"></div>
        </div>
        <div class="card-help">Toque nos números sorteados para marcar ou desmarcar a cartela. A estrela é livre! ⭐</div>
+       <div id="guestMarkProgress" class="card-mark-progress">0 de 24 números marcados e sorteados</div>
        <div class="last-ball-panel"><span>🎤 Última bolinha sorteada</span><strong id="guestLastBall">Aguardando</strong><small id="guestProgress">0 de 75 números sorteados</small></div>
        <button type="button" id="claimBtn" class="btn bingo-button wide">🏆 BINGO!</button>
        <div id="claimHelp" class="claim-hint">Complete uma linha ou cartela cheia e aperte BINGO!</div>
@@ -106,7 +108,7 @@
        <div class="admin-grid">
          <section class="admin-panel draw-panel">
            <div class="panel-heading"><h2>🎱 Sorteio ao vivo</h2><span id="adminLiveChip" class="status-pill">Aguardando</span></div>
-           <div class="draw-stage"><div id="adminBall" class="draw-ball">?</div><div class="draw-stage-text"><span>Última bolinha</span><strong id="adminLastBall">Aguardando</strong><p id="adminPrizeDisplay">Prêmio Surpresa #01</p></div></div>
+           <div class="draw-stage"><div id="adminBall" class="draw-ball">?</div><div class="draw-stage-text"><span>Última bolinha</span><strong id="adminLastBall">Aguardando</strong><p id="adminPrizeDisplay">Prêmio Surpresa #01</p><div id="adminEffectivePattern" class="admin-rule-display">🏆 Regra: linha, coluna ou diagonal</div></div></div>
            <button type="button" class="btn pink wide draw-main-btn" id="adminDraw" disabled>▶ SORTEAR PRÓXIMA BOLINHA</button>
            <div class="draw-controls"><button type="button" class="btn green" id="adminStart">▶ Iniciar rodada</button><button type="button" class="btn blue" id="adminPause" disabled>⏸ Pausar</button><button type="button" class="btn purple" id="adminResume" disabled>▶ Continuar</button><button type="button" class="btn orange" id="adminFinish" disabled>■ Encerrar</button></div>
            <div class="draw-controls secondary-controls"><button type="button" class="btn outline" id="adminNext">↻ Nova rodada / Novas cartelas</button></div>
@@ -116,7 +118,8 @@
            <div class="panel-heading"><h2>🎁 Configurar rodada</h2><span>Antes de iniciar</span></div>
            <form id="adminConfigForm" class="admin-form">
              <label for="adminPrize">Nome do prêmio (surpresa!)</label><input id="adminPrize" maxlength="60" placeholder="Prêmio Surpresa #01">
-             <label for="adminPattern">Como ganhar?</label><select id="adminPattern"><option value="line">Uma linha, coluna ou diagonal</option><option value="full">Cartela cheia</option></select>
+             <label for="adminPattern">Como ganhar?</label><select id="adminPattern"><option value="line">Uma linha, coluna ou diagonal</option><option value="full">Cartela cheia — 24 números marcados</option></select>
+             <small class="rule-setup-help">A regra escolhida aqui será aplicada automaticamente ao clicar em Iniciar rodada, mesmo sem clicar em Salvar configurações.</small>
              <label class="toggle-line"><input id="adminRegistrationOpen" type="checkbox" checked><span>Aceitar novos cadastros</span></label>
              <label class="toggle-line"><input id="adminInviteOnly" type="checkbox"><span>Exigir código individual</span></label>
              <button type="submit" class="btn purple wide">💾 Salvar configurações</button>
