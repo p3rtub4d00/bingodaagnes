@@ -119,18 +119,27 @@
   min-height: 0;
   overflow: hidden;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
+  padding-right: .4vw;
 }
 .tv-page .tv-mascot {
   display: block;
-  width: 100%;
+  width: auto;
+  height: 85%;
   max-width: 100%;
-  height: auto;
-  max-height: 98%;
+  max-height: 85%;
   object-fit: contain;
-  object-position: center right;
+  object-position: right bottom;
   flex: 0 1 auto;
+  pointer-events: none;
+  /* A personagem fica voltada para o sorteio, como na referência aprovada. */
+  animation: tvAgnesFloat 3.8s ease-in-out infinite;
+  filter: drop-shadow(0 .9vw .6vw rgba(95,0,109,.38));
+}
+@keyframes tvAgnesFloat {
+  0%, 100% { transform: scaleX(-1) translateY(0); }
+  50% { transform: scaleX(-1) translateY(-8px); }
 }
 .tv-page .tv-left {
   z-index: 1;
@@ -193,4 +202,9 @@
   }
   .tv-page .tv-mascot { width: 100%; max-height: 100%; }
   .tv-page .tv-middle { z-index: 5; }
+}
+
+/* Celular em modo paisagem: mantém a Agnes na coluna da direita. */
+@media (min-aspect-ratio: 1/1) and (max-height: 650px) {
+  .tv-page .tv-mascot { height: 81%; max-height: 81%; }
 }
