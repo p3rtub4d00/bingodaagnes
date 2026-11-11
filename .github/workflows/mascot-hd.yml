@@ -1,0 +1,32 @@
+name: Copiar personagem HD aprovada para o telão
+on:
+  push:
+    paths:
+      - ".github/workflows/mascot-hd.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  copy-approved:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Guardar a arte aprovada no próprio projeto
+        run: |
+          mkdir -p public/assets
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/p3rtub4d00/leilaodaagnes/78c5715f85c0b18ca034dd14a2fc22035f84e16c/public/assets/agnes-hd.webp" \
+            --output public/assets/agnes-telao.webp
+          file public/assets/agnes-telao.webp
+          test "$(wc -c < public/assets/agnes-telao.webp)" -gt 100000
+      - name: Versionar a personagem no Bingodaagnes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/agnes-telao.webp
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: adicionar Agnes HD aprovada exclusivamente para o telão"
+            git push
+          fi
