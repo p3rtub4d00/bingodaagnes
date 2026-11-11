@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#8800c2">
+<meta name="description" content="Bingo Surpresa da Agnes! Cartela digital e sorteio em tempo real para brincar na festa.">
+<title>Bingo Surpresa da Agnes 🎉</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Fredoka:wght@400;500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="stylesheet" href="/styles.css">
+<script src="/socket.io/socket.io.js" defer></script>
+<script src="/app.js" defer></script>
+</head>
+<body>
+<div id="app">
+ <section id="guestView" class="guest-page" hidden>
+  <div class="sky-decor" aria-hidden="true"><span>♥</span><span>★</span><span>✦</span><span>♥</span><span>★</span></div>
+  <div class="guest-wrap">
+   <header class="guest-hero">
+    <div class="brand-lockup"><div class="bingo-grid-logo">▦<span>★</span></div><div class="brand-title"><span>Bingo</span><strong>Surpresa</strong><em>da Agnes</em></div></div>
+    <img class="guest-mascot" src="https://raw.githubusercontent.com/p3rtub4d00/leilaodaagnes/main/public/assets/agnes-hd.webp" onerror="this.onerror=null;this.src='/assets/agnes.svg'" alt="Agnes de vestido roxo e laço roxo voando alegremente">
+    <p class="guest-tagline">💜 O bingo mais divertido da sua festa! 💜</p>
+   </header>
+   <main>
+    <div id="joinPanel" class="card join-panel">
+      <div class="join-symbol">🎊 🎁 🎊</div>
+      <h1>Sua diversão começa aqui!</h1>
+      <p>Digite seu nome, receba sua cartela e participe do <b>Bingo Surpresa da Agnes!</b></p>
+      <form id="joinForm" class="join-form">
+       <label for="joinName">Como podemos te chamar?</label>
+       <input id="joinName" name="name" minlength="2" maxlength="32" autocomplete="given-name" required placeholder="Seu nome ou apelido">
+       <div id="joinCodeWrap" hidden><label for="joinCode">Código individual do convite</label><input id="joinCode" maxlength="11" autocomplete="one-time-code" autocapitalize="characters" placeholder="AG-XXXXXXXX"><small>Cada código pode ser utilizado em somente uma conta.</small></div>
+       <div id="joinClosedNotice" class="notice warning" hidden>🔒 Os cadastros estão encerrados. Procure o anfitrião.</div>
+       <button type="submit" id="joinBtn" class="btn pink wide">🎉 RECEBER MINHA CARTELA!</button>
+      </form>
+      <small class="fine-print">🎈 Grátis e de brincadeira. Não há compras, apostas ou dinheiro real.</small>
+    </div>
+    <div id="guestDashboard" hidden>
+      <section class="welcome card"><div><span class="kicker">🎀 CARTELA DIGITAL</span><h1 id="welcomeName">Olá, convidado!</h1><p>Seu número da sorte chegou! 🌟</p></div><div class="round-tag">Rodada <b id="guestRound">01</b></div></section>
+      <section class="guest-board card">
+       <div class="board-heading"><span>🎱 MINHA CARTELA</span><span id="guestGameStatus" class="status-pill">Aguardando</span></div>
+       <div class="bingo-card-frame">
+        <div class="bingo-card-head"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+        <div id="bingoCells" class="bingo-cells" aria-label="Cartela de bingo de 5 por 5"></div>
+       </div>
+       <div class="card-help">Toque nos números sorteados para marcar ou desmarcar a cartela. A estrela é livre! ⭐</div>
+       <div class="last-ball-panel"><span>🎤 Última bolinha sorteada</span><strong id="guestLastBall">Aguardando</strong><small id="guestProgress">0 de 75 números sorteados</small></div>
+       <button type="button" id="claimBtn" class="btn bingo-button wide">🏆 BINGO!</button>
+       <div id="claimHelp" class="claim-hint">Complete uma linha ou cartela cheia e aperte BINGO!</div>
+      </section>
+      <section class="card history-card"><h2>✨ Números já sorteados</h2><div id="guestDrawn" class="balls-line"><span class="empty-message">O sorteio ainda vai começar!</span></div></section>
+      <div class="guest-bottom"><span>💜 Cartela individual da festa da Agnes</span><a href="/telao" target="_blank" rel="noopener">📺 Ver telão</a></div>
+    </div>
+   </main>
+  </div>
+ </section>
+ <section id="tvView" class="tv-page" hidden>
+   <div class="tv-stars" aria-hidden="true">★　✦　　 ♥　　★　　　✧　　　♥</div>
+   <header class="tv-topbar">
+    <div class="tv-brand"><span class="tv-brand-bingo">Bingo</span><strong>Surpresa</strong><em>da Agnes</em></div>
+    <div class="tv-status-area"><span class="sound-waves">◖))</span><strong id="tvState">SORTEIO AO VIVO</strong><small>Rodada <span id="tvRound">01</span> · <span id="tvPattern">Linha</span></small></div>
+   </header>
+   <main class="tv-stage">
+     <div class="tv-left">
+       <div class="tv-big-ball-halo"><div id="tvBigBall" class="tv-big-ball"><span class="ball-letter" id="tvBallLetter">?</span><span class="ball-number" id="tvBallNumber">--</span></div></div>
+       <div class="tv-ball-base"></div>
+     </div>
+     <div class="tv-middle">
+       <div class="tv-latest"><h2>Últimos números<br>sorteados:</h2><div id="tvLastFive" class="tv-recent-balls"><span class="tv-empty">Aguardando bolinhas...</span></div></div>
+       <div class="tv-prize">🎁 <span id="tvPrize">Prêmio Surpresa #01</span></div>
+       <div class="tv-cheer">💛 Boa sorte,<br> pessoal! 💜</div>
+     </div>
+     <div class="tv-mascot-holder"><img src="https://raw.githubusercontent.com/p3rtub4d00/leilaodaagnes/main/public/assets/agnes-hd.webp" onerror="this.onerror=null;this.src='/assets/agnes.svg'" class="tv-mascot" alt="Personagem da Agnes"></div>
+   </main>
+   <section class="tv-called-area"><div class="called-title">🎱 Números sorteados</div><div id="tvCalledGrid" class="tv-called-grid"></div></section>
+   <footer class="tv-footer"><span>🎈 BINGO SURPRESA DA AGNES</span><span id="tvGuestCount">0 convidados</span><span>💜 SÓ DE BRINCADEIRA!</span></footer>
+   <div class="tv-buttons"><button type="button" id="tvFullscreen">⛶ Tela cheia</button><button type="button" id="tvAudio">🔇 Ativar narração</button></div>
+   <div id="tvWinner" class="tv-winner-overlay" hidden>
+    <div class="confetti" aria-hidden="true">🎊 🎉 ⭐ 🎊 💜 🎉</div>
+    <h1>🎉 BINGO! 🎉</h1>
+    <div class="winner-card"><img src="/assets/mystery-gift.svg" alt="Presente surpresa"><div><span>🏆 Vencedor(a)</span><strong id="tvWinnerName">Maria</strong><p id="tvWinnerPrize">Prêmio Surpresa #01</p></div></div>
+    <h2>PARABÉNS! VOCÊ GANHOU!</h2>
+   </div>
+ </section>
+ <section id="adminView" class="admin-page" hidden>
+   <header class="admin-header"><a href="/" class="admin-brand">🎱 <b>Bingo <span>Surpresa</span> da Agnes</b></a><nav><a href="/" target="_blank" rel="noopener">📱 Convidados</a><a href="/telao" target="_blank" rel="noopener">📺 Telão</a><button type="button" id="adminLogout" hidden>Sair</button></nav></header>
+   <main class="admin-layout">
+     <section id="adminLogin" class="admin-login card">
+       <div class="login-icon">🔐</div><h1>Painel do Anfitrião</h1><p>Entre com a senha para controlar os sorteios da festa.</p>
+       <form id="adminLoginForm"><label for="adminPassword">Senha administrativa</label><input type="password" id="adminPassword" autocomplete="current-password" required placeholder="Digite sua senha"><button class="btn purple wide" type="submit">ENTRAR NO PAINEL</button></form>
+       <small>Configure ADMIN_PASSWORD e SESSION_SECRET no Render.</small>
+     </section>
+     <div id="adminDashboard" hidden>
+       <div class="admin-heading"><div><span class="kicker">💜 CENTRAL DA FESTA</span><h1>🎱 Painel do Anfitrião</h1><p>Gerencie convidados, sorteios e vencedores em tempo real.</p></div><a class="btn outline" href="/telao" target="_blank" rel="noopener">📺 Abrir telão</a></div>
+       <div id="dbWarning" class="notice warning" hidden>⚠️ MongoDB não conectado. Os dados estão temporariamente em memória e serão perdidos se o servidor reiniciar. Não use este modo na festa.</div>
+       <div class="metrics">
+         <div class="metric"><span>👥 Convidados</span><strong id="adminMetricGuests">0</strong></div>
+         <div class="metric"><span>🎱 Bolinhas</span><strong id="adminMetricDrawn">0/75</strong></div>
+         <div class="metric"><span>🎁 Rodada</span><strong id="adminMetricRound">01</strong></div>
+         <div class="metric"><span>🏆 Situação</span><strong id="adminMetricStatus">Aguardando</strong></div>
+       </div>
+       <div class="admin-grid">
+         <section class="admin-panel draw-panel">
+           <div class="panel-heading"><h2>🎱 Sorteio ao vivo</h2><span id="adminLiveChip" class="status-pill">Aguardando</span></div>
+           <div class="draw-stage"><div id="adminBall" class="draw-ball">?</div><div class="draw-stage-text"><span>Última bolinha</span><strong id="adminLastBall">Aguardando</strong><p id="adminPrizeDisplay">Prêmio Surpresa #01</p></div></div>
+           <button type="button" class="btn pink wide draw-main-btn" id="adminDraw" disabled>▶ SORTEAR PRÓXIMA BOLINHA</button>
+           <div class="draw-controls"><button type="button" class="btn green" id="adminStart">▶ Iniciar rodada</button><button type="button" class="btn blue" id="adminPause" disabled>⏸ Pausar</button><button type="button" class="btn purple" id="adminResume" disabled>▶ Continuar</button><button type="button" class="btn orange" id="adminFinish" disabled>■ Encerrar</button></div>
+           <div class="draw-controls secondary-controls"><button type="button" class="btn outline" id="adminNext">↻ Nova rodada / Novas cartelas</button></div>
+           <div class="notice muted">O sorteio é feito no servidor, sem repetir números. Ao iniciar uma nova rodada, cada participante recebe outra cartela.</div>
+         </section>
+         <section class="admin-panel setup-panel">
+           <div class="panel-heading"><h2>🎁 Configurar rodada</h2><span>Antes de iniciar</span></div>
+           <form id="adminConfigForm" class="admin-form">
+             <label for="adminPrize">Nome do prêmio (surpresa!)</label><input id="adminPrize" maxlength="60" placeholder="Prêmio Surpresa #01">
+             <label for="adminPattern">Como ganhar?</label><select id="adminPattern"><option value="line">Uma linha, coluna ou diagonal</option><option value="full">Cartela cheia</option></select>
+             <label class="toggle-line"><input id="adminRegistrationOpen" type="checkbox" checked><span>Aceitar novos cadastros</span></label>
+             <label class="toggle-line"><input id="adminInviteOnly" type="checkbox"><span>Exigir código individual</span></label>
+             <button type="submit" class="btn purple wide">💾 Salvar configurações</button>
+           </form>
+           <hr><h3>🔐 Códigos individuais</h3><p class="soft-copy">Opcional: um código por convidado ajuda a evitar várias contas no mesmo evento.</p>
+           <div class="code-tools"><select id="adminCodeCount"><option value="10">10 códigos</option><option value="20">20 códigos</option><option value="30">30 códigos</option><option value="50">50 códigos</option></select><button type="button" class="btn pink small" id="adminGenerateCodes">+ Gerar</button><button type="button" class="btn outline small" id="adminCopyCodes">📋 Copiar disponíveis</button></div>
+           <div id="adminCodeSummary" class="soft-copy">Nenhum código gerado.</div><div id="adminCodes" class="code-grid"></div>
+         </section>
+       </div>
+       <section class="admin-panel called-panel"><div class="panel-heading"><h2>🔢 Histórico de bolinhas</h2><span>Última sorteada primeiro</span></div><div id="adminCalled" class="admin-balls"><span class="empty-message">Ainda não há números sorteados.</span></div></section>
+       <section class="admin-panel participants-panel"><div class="panel-heading"><h2>👥 Participantes</h2><span id="adminGuestsCount">0 cadastrados</span></div><div class="table-scroll"><table><thead><tr><th>Convidado</th><th>Vitórias</th><th>Estado</th><th>Controle</th></tr></thead><tbody id="adminGuests"></tbody></table></div></section>
+       <section class="admin-panel danger-panel"><div><h3>⚠️ Zerar dados de teste</h3><p>Remove convidados, códigos, cartelas e todas as rodadas. Esta ação não pode ser desfeita.</p></div><button type="button" class="btn danger" id="adminReset">Zerar tudo</button></section>
+     </div>
+   </main>
+ </section>
+ <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</div>
+</body>
+</html>
