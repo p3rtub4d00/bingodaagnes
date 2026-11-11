@@ -259,3 +259,105 @@
   .bingo-rule-badge { font-size: 11px; }
   .admin-rule-display { max-width: 100%; }
 }
+
+
+/* Marca do telão: MESMO desenho tipográfico da página inicial.
+   O HTML usa as mesmas classes brand-lockup, bingo-grid-logo e brand-title.
+   As dimensões são proporcionais à televisão; contornos, cores e relevo são iguais. */
+.tv-page .tv-topbar .tv-brand-match {
+  display: flex;
+  position: relative;
+  align-items: flex-start;
+  flex: 0 1 65%;
+  max-width: 65%;
+  min-width: 0;
+  z-index: 3;
+  transform: rotate(-3deg);
+  filter: drop-shadow(1px 5px 1px rgba(48,0,59,.48));
+}
+.tv-page .tv-brand-match .bingo-grid-logo {
+  position: absolute;
+  top: clamp(4px, 1.1vw, 18px);
+  left: 0;
+  font-size: clamp(35px, 4.8vw, 86px);
+  line-height: .9;
+  color: #eeddff;
+  -webkit-text-stroke: 2px #43005e;
+  text-shadow: 2px 2px #e434f5;
+  transform: rotate(-16deg);
+}
+.tv-page .tv-brand-match .bingo-grid-logo span {
+  position: absolute;
+  top: 48%;
+  left: 33%;
+  font-size: .3em;
+  color: #ffe24a;
+  -webkit-text-stroke: 1px #7c0067;
+}
+.tv-page .tv-brand-match .brand-title {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 4;
+  margin: clamp(6px, 1vh, 13px) 0 0 clamp(42px, 5.1vw, 98px);
+  font-family: "Lilita One", "Baloo 2", cursive;
+  font-weight: 400;
+  letter-spacing: -.02em;
+  line-height: .86;
+  white-space: nowrap;
+}
+.tv-page .tv-brand-match .brand-title span,
+.tv-page .tv-brand-match .brand-title strong,
+.tv-page .tv-brand-match .brand-title em {
+  display: block;
+  font-family: "Lilita One", "Baloo 2", cursive;
+  font-style: normal;
+  font-weight: 400;
+  paint-order: stroke fill;
+}
+.tv-page .tv-brand-match .brand-title span {
+  font-size: clamp(32px, 4.8vw, 88px);
+  color: #fff5ff;
+  -webkit-text-stroke: 3px #3c004f;
+  text-shadow:
+    0 2px 0 #f8c8ff,
+    0 5px 0 #650079,
+    2px 7px 0 #350042,
+    3px 10px 13px rgba(43,0,54,.47);
+}
+.tv-page .tv-brand-match .brand-title strong {
+  font-size: clamp(36px, 6vw, 108px);
+  color: #ffda17;
+  -webkit-text-stroke: 3.6px #390046;
+  text-shadow:
+    0 2px 0 #fff29f,
+    1px 5px 0 #f38a00,
+    3px 8px 0 #61005d,
+    4px 11px 15px rgba(58,0,73,.5);
+}
+.tv-page .tv-brand-match .brand-title em {
+  align-self: flex-end;
+  margin-right: 1px;
+  font-size: clamp(26px, 3.9vw, 70px);
+  color: #ff80db;
+  -webkit-text-stroke: 2.5px #420047;
+  text-shadow:
+    0 2px 0 #ffc0f0,
+    1px 5px 0 #9c0070,
+    3px 7px 0 #4a004e,
+    3px 9px 13px rgba(56,0,62,.4);
+}
+@media (max-aspect-ratio: 1/1) {
+  .tv-page .tv-topbar .tv-brand-match { flex-basis: 63%; max-width: 63%; }
+  .tv-page .tv-brand-match .bingo-grid-logo { font-size: clamp(27px, 5vw, 42px); top: 3px; }
+  .tv-page .tv-brand-match .brand-title { margin-left: clamp(30px, 5.5vw, 50px); }
+  .tv-page .tv-brand-match .brand-title span { font-size: clamp(24px, 5.1vw, 40px); }
+  .tv-page .tv-brand-match .brand-title strong { font-size: clamp(27px, 5.8vw, 47px); }
+  .tv-page .tv-brand-match .brand-title em { font-size: clamp(20px, 4.5vw, 35px); }
+}
+@media (max-height: 550px) and (min-aspect-ratio: 1/1) {
+  .tv-page .tv-brand-match .brand-title { margin-top: 2px; }
+  .tv-page .tv-brand-match .brand-title span { font-size: clamp(25px, 4.2vw, 58px); }
+  .tv-page .tv-brand-match .brand-title strong { font-size: clamp(30px, 5vw, 68px); }
+  .tv-page .tv-brand-match .brand-title em { font-size: clamp(22px, 3.2vw, 45px); }
+}
