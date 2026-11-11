@@ -144,6 +144,7 @@ try{
   const mark=await call('/api/mark',{number,marked:true},aliceH);
   assert.equal(mark.response.status,200);
  }
+ await new Promise(done=>setTimeout(done,960));
  const tooEarly=await call('/api/claim',{},aliceH);
  assert.equal(tooEarly.response.status,400,'cartela cheia não vence com menos de 24 números sorteados');
  // Completar o sorteio e marcar APENAS uma linha jamais pode dar BINGO em cartela cheia.
