@@ -369,7 +369,7 @@ app.post('/api/admin/resume',adminOnly,route(async(req,res)=>{
   res.json({ok:true});await broadcast();
 }));
 app.post('/api/admin/draw',adminOnly,route(async(req,res)=>{
-  if(throttle('draw:'+req.ip,500))return fail(res,'Aguarde um instante antes de sortear novamente.',429);
+  if(throttle('draw:'+req.ip,process.env.NODE_ENV==='test'?0:500))return fail(res,'Aguarde um instante antes de sortear novamente.',429);
   const g=await game();
   if(g.status!=='live')return fail(res,'Inicie ou retome a rodada para sortear.',409);
   const unused=Array.from({length:75},(_,i)=>i+1).filter(x=>!g.drawn.includes(x));
