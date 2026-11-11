@@ -208,3 +208,54 @@
 @media (min-aspect-ratio: 1/1) and (max-height: 650px) {
   .tv-page .tv-mascot { height: 81%; max-height: 81%; }
 }
+
+
+/* Modalidade e contagem conferidas pelo servidor: destaque discreto,
+   preservando a identidade visual aprovada do Bingo da Agnes. */
+.bingo-rule-badge {
+  display: block;
+  text-align: center;
+  background: linear-gradient(95deg,#ffe87b,#ffd33b);
+  color: #670575;
+  border: 1px solid #f6bb31;
+  border-radius: 12px;
+  padding: 9px 11px;
+  margin: 0 0 12px;
+  font-family: "Fredoka",sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.card-mark-progress {
+  text-align: center;
+  background: #f7eafa;
+  color: #722295;
+  border: 1px solid #e4c7f0;
+  border-radius: 9px;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+.admin-rule-display {
+  margin-top: 9px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #ffde56;
+  color: #650067;
+  font-size: 12px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+.rule-setup-help {
+  display: block;
+  font-size: 11px;
+  color: #84638f;
+  line-height: 1.5;
+  margin: 6px 0 13px;
+}
+@media (max-width: 550px) {
+  .bingo-rule-badge { font-size: 11px; }
+  .admin-rule-display { max-width: 100%; }
+}
