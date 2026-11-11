@@ -6,7 +6,7 @@ const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const roundNo=v=>String(v||1).padStart(2,'0');
 const letter=n=>['B','I','N','G','O'][Math.ceil(n/15)-1]||'';
 const statusName=v=>({idle:'Aguardando',live:'Ao vivo',paused:'Pausado',won:'Bingo validado!',finished:'Encerrado',resetting:'Preparando'})[v]||'Aguardando';
-const state={game:null,me:null,admin:null,sound:false,voices:[],audioContext:null,lastSpoken:'',toastTimer:null,busy:false,lastAdminRefresh:0,lastMeRefresh:0};
+const state={game:null,me:null,admin:null,sound:false,voices:[],audioContext:null,lastSpoken:'',toastTimer:null,busy:false,lastAdminRefresh:0,lastMeRefresh:0,adminFormDirty:false};
 function toast(message,error=false) {
  const el=$('toast');el.textContent=message;el.classList.toggle('error',error);el.hidden=false;
  clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>el.hidden=true,4200);
@@ -78,6 +78,14 @@ function renderGuest(){
  $('guestProgress').textContent=(game.drawn?.length||0)+' de 75 números sorteados';
  const called=new Set(game.drawn||[]),marks=new Set(me.marks||[]);
  const wrongRound=me.round!==game.round;
+ const validCount=(me.card||[]).filter((n,i)=>i!==12&&called.has(n)&&marks.has(n)).length;
+ const full=game.pattern==='full';
+ $('guestRuleBadge').textContent=full
+   ? '🏆 CARTELA CHEIA: os 24 números precisam ser sorteados e marcados'
+   : '🏆 REGRA DA RODADA: linha, coluna ou diagonal';
+ $('guestMarkProgress').textContent=full
+   ? validCount+' de 24 números sorteados e marcados para ganhar'
+   : validCount+' números sorteados e marcados na sua cartela';
  $('bingoCells').innerHTML=(me.card||[]).map((number,i)=>{
   if(i===12)return '<div class="bingo-cell free marked" aria-label="Casa livre">⭐</div>';
   const isCalled=called.has(number),isMarked=marks.has(number);
@@ -88,14 +96,14 @@ function renderGuest(){
  }).join('');
  $('guestDrawn').innerHTML=(game.drawn||[]).length?game.drawn.slice().reverse().map(x=>pill(x)).join(''):'<span class="empty-message">O sorteio ainda vai começar!</span>';
  const ready=hasBingo(),done=game.status==='won'||game.status==='finished';
- $('claimBtn').disabled=!['live','paused'].includes(game.status)||wrongRound||me.blocked;
+ $('claimBtn').disabled=!ready||!['live','paused'].includes(game.status)||wrongRound||me.blocked;
  $('claimBtn').textContent=done?'🏆 RODADA ENCERRADA':ready?'🎉 BINGO! CONFIRMAR':'🏆 BINGO!';
  const reason=me.blocked?'Sua cartela foi bloqueada pelo anfitrião.':
    wrongRound?'Preparando sua nova cartela...':
    game.status==='won'?('🎉 '+game.winner?.name+' venceu '+game.prize+'!'):
    game.status==='finished'?'Esta rodada foi encerrada. Aguarde a próxima.':
    game.status==='idle'?'Aguarde o anfitrião iniciar o sorteio!':
-   game.pattern==='full'?'Marque os 24 números para completar a cartela cheia.':
+   game.pattern==='full'?(ready?'🎉 Todos os 24 números completos! Confirme seu BINGO!':'Cartela cheia: faltam '+(24-validCount)+' números sorteados e marcados.'):
    ready?'🎉 Você completou uma combinação! Clique em BINGO!':'Complete uma linha, coluna ou diagonal para ganhar!';
  $('claimHelp').textContent=reason;
 }
@@ -200,6 +208,9 @@ function renderAdminLive(){
  $('adminBall').textContent=g.lastBall?letter(g.lastBall)+String(g.lastBall).padStart(2,'0'):'?';
  $('adminLastBall').textContent=g.lastBall?letter(g.lastBall)+' - '+g.lastBall:'Aguardando';
  $('adminPrizeDisplay').textContent=g.prize;
+ $('adminEffectivePattern').textContent=g.pattern==='full'
+   ? '🏆 CARTELA CHEIA — 24 números marcados e sorteados'
+   : '🏆 LINHA, COLUNA OU DIAGONAL';
  $('adminDraw').disabled=g.status!=='live'||g.drawn.length>=75;
  $('adminStart').disabled=g.status!=='idle';
  $('adminPause').disabled=g.status!=='live';
@@ -213,10 +224,14 @@ function renderAdmin(){
  $('dbWarning').hidden=!!state.admin.databaseConnected;
  renderAdminLive();
  const g=state.admin.game;
- $('adminPrize').value=g.prize;
- $('adminPattern').value=g.pattern;
- $('adminRegistrationOpen').checked=g.registrationOpen!==false;
- $('adminInviteOnly').checked=!!g.inviteOnly;
+ // Preserve a opção escolhida mesmo quando chega uma bolinha ou outro evento.
+ // Antes, a atualização do painel revertia "Cartela cheia" para a regra salva.
+ if(!state.adminFormDirty) {
+  $('adminPrize').value=g.prize;
+  $('adminPattern').value=g.pattern;
+  $('adminRegistrationOpen').checked=g.registrationOpen!==false;
+  $('adminInviteOnly').checked=!!g.inviteOnly;
+ }
  $('adminPrize').disabled=['live','paused','resetting'].includes(g.status);
  $('adminPattern').disabled=['live','paused','resetting'].includes(g.status);
  const codes=state.admin.codes||[],available=codes.filter(c=>!c.used);
@@ -241,13 +256,26 @@ function initAdmin(){
  $('adminLogout').addEventListener('click',async()=>{
   await api('/admin/logout',{});state.admin=null;await loadAdmin();toast('Você saiu do painel.');
  });
+ $('adminConfigForm').addEventListener('input',()=>{state.adminFormDirty=true;});
+ $('adminConfigForm').addEventListener('change',()=>{state.adminFormDirty=true;});
  $('adminConfigForm').addEventListener('submit',async e=>{
   e.preventDefault();
   if(await adminPost('config',{prize:$('adminPrize').value,pattern:$('adminPattern').value,
-   registrationOpen:$('adminRegistrationOpen').checked,inviteOnly:$('adminInviteOnly').checked}))
+   registrationOpen:$('adminRegistrationOpen').checked,inviteOnly:$('adminInviteOnly').checked})) {
+   state.adminFormDirty=false;
+   await loadAdmin(false);
    toast('Configurações salvas! 🎁');
+  }
  });
- $('adminStart').addEventListener('click',async()=>{if(await adminPost('start'))toast('Rodada iniciada! Boa sorte! 🎉');});
+ $('adminStart').addEventListener('click',async()=>{
+  const pattern=$('adminPattern').value;
+  const prize=$('adminPrize').value;
+  if(await adminPost('start',{pattern,prize})) {
+   state.adminFormDirty=false;
+   await loadAdmin(false);
+   toast('Rodada iniciada em '+(pattern==='full'?'CARTELA CHEIA (24 números)':'LINHA/COLUNA/DIAGONAL')+'! 🎱');
+  }
+ });
  $('adminDraw').addEventListener('click',async()=>{
   if(state.busy)return;state.busy=true;$('adminDraw').disabled=true;
   try{
@@ -263,7 +291,7 @@ function initAdmin(){
  });
  $('adminNext').addEventListener('click',()=>{
   if(confirm('Começar uma nova rodada? Todos os convidados receberão outra cartela e os números anteriores serão limpos.'))
-   adminPost('next').then(ok=>{if(ok)toast('Novas cartelas preparadas! 🎱');});
+   adminPost('next').then(async ok=>{if(ok){state.adminFormDirty=false;await loadAdmin(false);toast('Novas cartelas preparadas! 🎱');}});
  });
  $('adminGenerateCodes').addEventListener('click',async()=>{
   const count=Number($('adminCodeCount').value);
