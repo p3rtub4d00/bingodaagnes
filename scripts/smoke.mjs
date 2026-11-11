@@ -101,9 +101,11 @@ try{
   const mark=await call('/api/mark',{number,marked:true},aliceH);
   assert.equal(mark.response.status,200);
  }
+ await new Promise(done=>setTimeout(done,960));
  const winner=await call('/api/claim',{},aliceH);
  assert.equal(winner.response.status,200);
  assert.equal(winner.result.winner.name,'Alice');
+ await new Promise(done=>setTimeout(done,960));
  const duplicateWinner=await call('/api/claim',{},aliceH);
  assert.equal(duplicateWinner.response.status,409);
  const won=await call('/api/state');
