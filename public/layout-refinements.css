@@ -1,0 +1,196 @@
+
+/*
+ * Ajustes visuais pós-aprovação — 11/11/2026
+ * Somente apresentação. Não afeta cartelas, sorteios nem autenticação.
+ */
+
+/* Título inicial: tipografia arredondada, contorno duplo e relevo
+   inspirado na arte aprovada. */
+.guest-hero .brand-lockup {
+  z-index: 4;
+  transform: rotate(-3deg);
+  filter: drop-shadow(1px 5px 1px rgba(48,0,59,.48));
+}
+.guest-hero .brand-title {
+  font-family: "Lilita One", "Baloo 2", cursive;
+  line-height: .86;
+  letter-spacing: -.02em;
+  margin-top: 11px;
+  position: relative;
+  z-index: 4;
+}
+.guest-hero .brand-title span,
+.guest-hero .brand-title strong,
+.guest-hero .brand-title em {
+  font-family: "Lilita One", "Baloo 2", cursive;
+  font-weight: 400;
+  paint-order: stroke fill;
+}
+.guest-hero .brand-title span {
+  color: #fff5ff;
+  -webkit-text-stroke: 3px #3c004f;
+  text-shadow:
+    0 2px 0 #f8c8ff,
+    0 5px 0 #650079,
+    2px 7px 0 #350042,
+    3px 10px 13px rgba(43,0,54,.47);
+}
+.guest-hero .brand-title strong {
+  color: #ffda17;
+  -webkit-text-stroke: 3.6px #390046;
+  text-shadow:
+    0 2px 0 #fff29f,
+    1px 5px 0 #f38a00,
+    3px 8px 0 #61005d,
+    4px 11px 15px rgba(58,0,73,.5);
+}
+.guest-hero .brand-title em {
+  color: #ff80db;
+  -webkit-text-stroke: 2.5px #420047;
+  text-shadow:
+    0 2px 0 #ffc0f0,
+    1px 5px 0 #9c0070,
+    3px 7px 0 #4a004e,
+    3px 9px 13px rgba(56,0,62,.4);
+}
+/* A faixa amarela sempre aparece À FRENTE da ilustração,
+   inclusive o trecho final da frase. */
+.guest-hero .guest-mascot {
+  z-index: 2;
+}
+.guest-hero .guest-tagline {
+  z-index: 5;
+  font-family: "Baloo 2", "Fredoka", sans-serif;
+  font-weight: 800;
+  font-size: clamp(12px, 2.3vw, 16px);
+  line-height: 1.15;
+  background: linear-gradient(180deg, #ffed97 0%, #ffd832 70%, #ffcb15 100%);
+  color: #62006e;
+  text-shadow: 0 1px 0 #fff8d6;
+  border: 2px solid rgba(255,255,208,.8);
+  border-radius: 999px;
+  box-shadow: 0 5px 0 #d58c05, 0 9px 12px rgba(99,0,93,.2);
+  padding: 10px 12px;
+  left: 4%;
+  right: 4%;
+  bottom: 9px;
+  transform: rotate(-1deg);
+  white-space: normal;
+}
+
+/* Telão: cada bloco permanece em sua própria coluna.
+   A imagem da Agnes deixa de avançar sobre "Boa sorte, pessoal!". */
+.tv-page .tv-stage {
+  grid-template-columns: 36% 38% 26%;
+  isolation: isolate;
+}
+.tv-page .tv-middle {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+  max-height: 100%;
+  align-self: center;
+  gap: clamp(5px, 1.35vh, 16px);
+  padding: 0 .7vw;
+}
+.tv-page .tv-latest,
+.tv-page .tv-prize {
+  position: relative;
+  z-index: 5;
+  min-width: 0;
+}
+.tv-page .tv-cheer {
+  position: relative;
+  z-index: 6;
+  max-width: 100%;
+  margin: 2px auto 4px;
+  font-size: clamp(21px, 2.7vw, 48px);
+  line-height: 1.04;
+  color: #ffe34b;
+  text-wrap: balance;
+  text-shadow: 2px 3px 0 #77006d, 3px 5px 8px #4d005e;
+}
+.tv-page .tv-mascot-holder {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.tv-page .tv-mascot {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 98%;
+  object-fit: contain;
+  object-position: center right;
+  flex: 0 1 auto;
+}
+.tv-page .tv-left {
+  z-index: 1;
+  min-width: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+.tv-page .tv-big-ball-halo {
+  max-width: 96%;
+  max-height: 95%;
+}
+.tv-page .tv-called-area {
+  position: relative;
+  z-index: 3;
+}
+
+/* TV/notebook com barra de tarefas e pouco espaço vertical. */
+@media (max-height: 700px) and (min-aspect-ratio: 1/1) {
+  .tv-page .tv-topbar { min-height: 18vh; }
+  .tv-page .tv-stage { padding-top: .5vh; padding-bottom: .5vh; }
+  .tv-page .tv-big-ball-halo { width: min(29vw, 39vh); }
+  .tv-page .tv-middle { gap: 1vh; }
+  .tv-page .tv-latest { padding: .6vh .7vw; }
+  .tv-page .tv-latest h2 { margin-bottom: .6vh; font-size: clamp(14px, 1.75vw, 26px); }
+  .tv-page .tv-prize { padding: .55vh .5vw; font-size: clamp(14px, 1.9vw, 28px); }
+  .tv-page .tv-cheer { font-size: clamp(20px, 2.4vw, 37px); margin: 0 auto; }
+}
+
+/* Cabeçalho em celulares pequenos. O slogan e a personagem
+   continuam legíveis, sem esconder parte do título. */
+@media (max-width: 550px) {
+  .guest-hero .brand-title {
+    margin-left: 37px;
+    line-height: .91;
+  }
+  .guest-hero .brand-title span { font-size: clamp(39px, 11.2vw, 59px); }
+  .guest-hero .brand-title strong { font-size: clamp(40px, 11.3vw, 60px); }
+  .guest-hero .brand-title em { font-size: clamp(30px, 8.4vw, 42px); }
+  .guest-hero .guest-mascot { max-width: 46%; right: -12px; }
+  .guest-hero .guest-tagline { font-size: clamp(11px, 3.1vw, 14px); padding: 9px 8px; }
+}
+@media (max-width: 360px) {
+  .guest-hero .brand-title { margin-left: 32px; }
+  .guest-hero .brand-title span { font-size: 38px; }
+  .guest-hero .brand-title strong { font-size: 39px; }
+  .guest-hero .brand-title em { font-size: 30px; }
+  .guest-hero .guest-mascot { max-width: 43%; }
+}
+/* O telão aberto verticalmente também mantém a personagem no seu espaço. */
+@media (max-aspect-ratio: 1/1) {
+  .tv-page .tv-stage { grid-template-columns: 47% 53%; }
+  .tv-page .tv-mascot-holder {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: min(32vw, 34%);
+    height: min(25vh, 30%);
+    opacity: .64;
+    pointer-events: none;
+  }
+  .tv-page .tv-mascot { width: 100%; max-height: 100%; }
+  .tv-page .tv-middle { z-index: 5; }
+}
