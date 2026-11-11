@@ -66,6 +66,7 @@ try{
  const charlieH={headers:await freshDevice()};
  const noCode=await call('/api/join',{name:'Charlie'},charlieH);
  assert.equal(noCode.response.status,403);
+ await new Promise(done=>setTimeout(done,800));
  const charlie=await call('/api/join',{name:'Charlie',code:newCodes.result.codes[0]},charlieH);
  assert.equal(charlie.response.status,201);
  const daveH={headers:await freshDevice()};
