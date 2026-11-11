@@ -164,6 +164,11 @@ try{
  // Mesmo faltando APENAS UM dos 24 números, não pode ser declarado vencedor.
  const target24=fullAlice.card.filter(n=>n>0);
  const currentMarks=new Set((await call('/api/me',undefined,aliceH)).result.marks);
+ if(currentMarks.has(target24[23])){
+  const unmark=await call('/api/mark',{number:target24[23],marked:false},aliceH);
+  assert.equal(unmark.response.status,200);
+  currentMarks.delete(target24[23]);
+ }
  for(const number of target24.slice(0,23)){
   if(currentMarks.has(number))continue;
   const mark=await call('/api/mark',{number,marked:true},aliceH);
