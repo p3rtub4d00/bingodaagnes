@@ -121,6 +121,69 @@ try{
  const noDraw=await call('/api/admin/draw',{},admin);assert.equal(noDraw.response.status,409);
  const resumed=await call('/api/admin/resume',{},admin);assert.equal(resumed.response.status,200);
  const finish=await call('/api/admin/finish',{},admin);assert.equal(finish.response.status,200);
- console.log('✅ Bingo smoke passed: 75 unique balls, cards, one-device login, invite codes, admin controls, marking, bingo validation, winner, new round.');
+
+ // Regressão: o operador pode escolher "Cartela cheia" e clicar DIRETO em Iniciar.
+ // Antes o site ignorava a seleção não salva e validava a primeira linha como BINGO.
+ const thirdRound=await call('/api/admin/next',{},admin);
+ assert.equal(thirdRound.response.status,200);
+ const thirdStart=await call('/api/admin/start',{pattern:'full',prize:'Surpresa da Cartela Cheia'},admin);
+ assert.equal(thirdStart.response.status,200);
+ assert.equal(thirdStart.result.pattern,'full');
+ const fullState=await call('/api/state');
+ assert.equal(fullState.result.game.pattern,'full','deve aplicar cartela cheia ao iniciar, sem salvar antes');
+ const fullAlice=(await call('/api/me',undefined,aliceH)).result;
+ assert.equal(fullAlice.round,3);
+ assert.equal(fullAlice.marks.length,0);
+ const firstDraws=new Set();
+ for(let i=0;i<18;i++){
+  const ball=await call('/api/admin/draw',{},admin);
+  assert.equal(ball.response.status,200);
+  firstDraws.add(ball.result.number);
+ }
+ for(const number of fullAlice.card.filter(n=>firstDraws.has(n))){
+  const mark=await call('/api/mark',{number,marked:true},aliceH);
+  assert.equal(mark.response.status,200);
+ }
+ const tooEarly=await call('/api/claim',{},aliceH);
+ assert.equal(tooEarly.response.status,400,'cartela cheia não vence com menos de 24 números sorteados');
+ // Completar o sorteio e marcar APENAS uma linha jamais pode dar BINGO em cartela cheia.
+ for(let i=18;i<75;i++){
+  const ball=await call('/api/admin/draw',{},admin);
+  assert.equal(ball.response.status,200);
+ }
+ const markedFromInitial=fullAlice.card.filter(n=>firstDraws.has(n) && n!==0);
+ const firstLine=fullAlice.card.slice(0,5);
+ for(const number of firstLine){
+  if(markedFromInitial.includes(number))continue;
+  const mark=await call('/api/mark',{number,marked:true},aliceH);
+  assert.equal(mark.response.status,200);
+ }
+ await new Promise(done=>setTimeout(done,960));
+ const lineDoesNotWin=await call('/api/claim',{},aliceH);
+ assert.equal(lineDoesNotWin.response.status,400,'uma linha completa não basta para cartela cheia');
+ // Mesmo faltando APENAS UM dos 24 números, não pode ser declarado vencedor.
+ const target24=fullAlice.card.filter(n=>n>0);
+ const currentMarks=new Set((await call('/api/me',undefined,aliceH)).result.marks);
+ for(const number of target24.slice(0,23)){
+  if(currentMarks.has(number))continue;
+  const mark=await call('/api/mark',{number,marked:true},aliceH);
+  assert.equal(mark.response.status,200);
+ }
+ const beforeLast=(await call('/api/me',undefined,aliceH)).result;
+ assert.equal(beforeLast.marks.length,23);
+ await new Promise(done=>setTimeout(done,960));
+ const almostFull=await call('/api/claim',{},aliceH);
+ assert.equal(almostFull.response.status,400,'23 de 24 números não é cartela cheia');
+ const lastNumber=target24[23];
+ const lastMark=await call('/api/mark',{number:lastNumber,marked:true},aliceH);
+ assert.equal(lastMark.response.status,200);
+ assert.equal(lastMark.result.canClaim,true);
+ await new Promise(done=>setTimeout(done,960));
+ const fullWinner=await call('/api/claim',{},aliceH);
+ assert.equal(fullWinner.response.status,200);
+ assert.equal(fullWinner.result.winner.name,'Alice');
+ assert.equal((await call('/api/state')).result.game.status,'won');
+
+ console.log('✅ Bingo smoke passed: 75 unique balls, cards, one-device login, invite codes, line validation, 24/24 full-card validation, admin choice on start, winner and new rounds.');
 }catch(e){console.error('❌ Falha no bingo:',e);process.exitCode=1;}
 finally{child.kill('SIGTERM');}
