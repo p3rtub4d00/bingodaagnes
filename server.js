@@ -118,11 +118,16 @@ function letter(number) {
   return ['B','I','N','G','O'][Math.ceil(number/15)-1] || '';
 }
 function hasWin(c,marks,drawn,pattern) {
-  if(!Array.isArray(c)||c.length!==25)return false;
+  if(!Array.isArray(c)||c.length!==25||!['line','full'].includes(pattern))return false;
   const called=new Set(drawn||[]);
   const marked=new Set(marks||[]);
   const valid=i=>i===12 || (called.has(c[i]) && marked.has(c[i]));
-  if(pattern==='full')return Array.from({length:25},(_,i)=>i).every(valid);
+  // Cartela cheia: 24 números distintos sorteados E marcados (centro é livre).
+  // Uma linha completa jamais pode ser declarada vencedora nessa modalidade.
+  if(pattern==='full') {
+    if(called.size<24)return false;
+    return Array.from({length:25},(_,i)=>i).every(valid);
+  }
   for(let r=0;r<5;r++){
     if([0,1,2,3,4].every(col=>valid(r*5+col)))return true;
   }
@@ -295,8 +300,12 @@ app.post('/api/claim',route(async(req,res)=>{
   if(current.status!=='live'&&current.status!=='paused')
     return fail(res,current.status==='won'?'Esta rodada já tem vencedor!':'O bingo não está em andamento.',409);
   if(participant.round!==current.round)return fail(res,'Sua cartela não pertence a esta rodada.',409);
-  if(!hasWin(participant.card,participant.marks,current.drawn,current.pattern))
-    return fail(res,'Ainda não completou a combinação! Confira os números marcados.',400);
+  if(!hasWin(participant.card,participant.marks,current.drawn,current.pattern)) {
+    const message=current.pattern==='full'
+      ? 'Cartela cheia exige os 24 números sorteados e marcados. Ainda não é BINGO!'
+      : 'Ainda não completou linha, coluna ou diagonal com números sorteados e marcados.';
+    return fail(res,message,400);
+  }
   const winner={guestId:id(participant),name:participant.name,round:current.round,prize:current.prize};
   const updated=await changeGame(current,{status:'won',winner});
   if(!updated)return fail(res,'O bingo foi atualizado. Confira o resultado.',409);
@@ -355,8 +364,13 @@ app.post('/api/admin/guests/:id/block',adminOnly,route(async(req,res)=>{
 app.post('/api/admin/start',adminOnly,route(async(req,res)=>{
   const g=await game();
   if(g.status!=='idle')return fail(res,'Inicie apenas uma rodada preparada. Use Nova rodada após terminar.');
-  if(!await changeGame(g,{status:'live'}))return fail(res,'O estado mudou. Tente novamente.',409);
-  res.json({ok:true});await broadcast();
+  // A seleção visível no Admin é aplicada atomica e obrigatoriamente ao iniciar,
+  // mesmo que o organizador não tenha clicado em "Salvar configurações".
+  const pattern=req.body?.pattern===undefined?g.pattern:req.body.pattern;
+  if(!['line','full'].includes(pattern))return fail(res,'Escolha linha ou cartela cheia.',400);
+  const prize=req.body?.prize===undefined?g.prize:(clean(req.body.prize,60)||'Prêmio Surpresa');
+  if(!await changeGame(g,{status:'live',pattern,prize}))return fail(res,'O estado mudou. Tente novamente.',409);
+  res.json({ok:true,pattern,prize});await broadcast();
 }));
 app.post('/api/admin/pause',adminOnly,route(async(req,res)=>{
   const g=await game();if(g.status!=='live')return fail(res,'A rodada não está em andamento.');
