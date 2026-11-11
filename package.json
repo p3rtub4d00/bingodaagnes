@@ -1,0 +1,22 @@
+{
+  "name": "bingo-surpresa-da-agnes",
+  "version": "1.0.0",
+  "description": "Bingo digital de brincadeira para o aniversário da Agnes",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=20 <27"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check public/app.js",
+    "test": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mongoose": "^8.10.1",
+    "socket.io": "^4.8.1",
+    "dotenv": "^16.4.7"
+  }
+}
