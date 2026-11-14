@@ -361,3 +361,75 @@
   .tv-page .tv-brand-match .brand-title strong { font-size: clamp(30px, 5vw, 68px); }
   .tv-page .tv-brand-match .brand-title em { font-size: clamp(22px, 3.2vw, 45px); }
 }
+
+
+/* Sorteio automático: painel compacto, seguindo a UI aprovada da Agnes. */
+.auto-draw-panel {
+  margin-top: 15px;
+  padding: 14px;
+  background: linear-gradient(135deg,#fff4ff,#f6e7ff);
+  border: 1px solid #e4c5f5;
+  border-radius: 16px;
+}
+.auto-draw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.auto-draw-header strong {
+  color: #680b8e;
+  font-size: 16px;
+  font-family: "Baloo 2", "Fredoka", sans-serif;
+  line-height: 1.15;
+}
+.auto-draw-status {
+  font-size: 11px;
+  white-space: nowrap;
+  color: #7c4795;
+  border-radius: 100px;
+  background: #eed8f8;
+  padding: 5px 9px;
+  font-weight: 700;
+}
+.auto-draw-status.active {
+  background: #dbfbe4;
+  color: #09813d;
+}
+.auto-draw-actions {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(120px,1.2fr);
+  gap: 9px;
+  align-items: center;
+}
+.auto-draw-actions label {
+  color: #705080;
+  font-size: 12px;
+  font-weight: 700;
+}
+.auto-draw-actions select {
+  background: #fff;
+  color: #570079;
+  padding: 8px 10px;
+  height: 42px;
+  max-width: 100%;
+  border-radius: 11px;
+  border: 1px solid #d6a7ed;
+}
+.auto-draw-actions .btn {
+  font-size: 13px;
+  min-height: 44px;
+  padding: 9px 5px;
+}
+.auto-draw-next {
+  color: #80628e;
+  font-size: 12px;
+  margin: 11px 0 0;
+  line-height: 1.4;
+}
+@media (max-width: 420px) {
+  .auto-draw-panel { padding: 11px; }
+  .auto-draw-actions .btn { font-size: 11px; }
+  .auto-draw-header strong { font-size: 14px; }
+}
