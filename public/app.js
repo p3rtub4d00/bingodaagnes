@@ -6,7 +6,7 @@ const escapeHTML=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const roundNo=v=>String(v||1).padStart(2,'0');
 const letter=n=>['B','I','N','G','O'][Math.ceil(n/15)-1]||'';
 const statusName=v=>({idle:'Aguardando',live:'Ao vivo',paused:'Pausado',won:'Bingo validado!',finished:'Encerrado',resetting:'Preparando'})[v]||'Aguardando';
-const state={game:null,me:null,admin:null,sound:false,voices:[],audioContext:null,lastSpoken:'',toastTimer:null,busy:false,lastAdminRefresh:0,lastMeRefresh:0,adminFormDirty:false};
+const state={game:null,me:null,admin:null,sound:false,voices:[],audioContext:null,lastSpoken:'',toastTimer:null,busy:false,lastAdminRefresh:0,lastMeRefresh:0,adminFormDirty:false,autoIntervalDirty:false};
 function toast(message,error=false) {
  const el=$('toast');el.textContent=message;el.classList.toggle('error',error);el.hidden=false;
  clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>el.hidden=true,4200);
@@ -198,6 +198,24 @@ async function loadAdmin(alert=false){
   else if(alert)toast(e.message,true);
  }
 }
+function updateAutoCountdown(){
+ const g=state.game?.game;
+ if(!g||view!=='admin'||!state.admin)return;
+ const el=$('adminAutoCountdown');
+ if(!g.autoEnabled){
+  el.textContent='Modo manual: use o botão rosa para sortear uma bolinha por vez.';
+  return;
+ }
+ if(g.status==='paused'){
+  el.textContent='⏸ Pausado — o automático será retomado após clicar em Continuar.';
+  return;
+ }
+ const ms=g.nextAutoDrawAt?Math.max(0,new Date(g.nextAutoDrawAt).getTime()-Date.now()):0;
+ const secs=Math.max(0,Math.ceil(ms/1000));
+ el.textContent=secs>0
+  ? '⏱ Próxima bolinha em '+secs+' segundo'+(secs===1?'':'s')+'.'
+  : '🎱 Sorteando a próxima bolinha...';
+}
 function renderAdminLive(){
  const g=state.game?.game;if(!g||!state.admin)return;
  $('adminMetricGuests').textContent=state.game.registered;
@@ -211,7 +229,16 @@ function renderAdminLive(){
  $('adminEffectivePattern').textContent=g.pattern==='full'
    ? '🏆 CARTELA CHEIA — 24 números marcados e sorteados'
    : '🏆 LINHA, COLUNA OU DIAGONAL';
- $('adminDraw').disabled=g.status!=='live'||g.drawn.length>=75;
+ $('adminDraw').disabled=g.status!=='live'||g.drawn.length>=75||!!g.autoEnabled;
+ const isAutomatic=!!g.autoEnabled;
+ $('adminAutoStart').disabled=isAutomatic||!['live','paused'].includes(g.status)||g.drawn.length>=75;
+ $('adminAutoStop').disabled=!isAutomatic;
+ $('adminAutoInterval').disabled=isAutomatic;
+ if(isAutomatic || !state.autoIntervalDirty)
+   $('adminAutoInterval').value=String(g.autoIntervalSec||10);
+ $('adminAutoStatus').textContent=isAutomatic?(g.status==='paused'?'Automático pausado':'Automático ligado'):'Modo manual';
+ $('adminAutoStatus').className='auto-draw-status'+(isAutomatic?' active':'');
+ updateAutoCountdown();
  $('adminStart').disabled=g.status!=='idle';
  $('adminPause').disabled=g.status!=='live';
  $('adminResume').disabled=g.status!=='paused';
@@ -276,6 +303,20 @@ function initAdmin(){
    toast('Rodada iniciada em '+(pattern==='full'?'CARTELA CHEIA (24 números)':'LINHA/COLUNA/DIAGONAL')+'! 🎱');
   }
  });
+ $('adminAutoInterval').addEventListener('change',()=>{state.autoIntervalDirty=true;});
+ $('adminAutoStart').addEventListener('click',async()=>{
+  const intervalSec=Number($('adminAutoInterval').value);
+  if(await adminPost('auto',{enabled:true,intervalSec})){
+   state.autoIntervalDirty=false;
+   toast('Sorteio automático ativado! Uma bolinha a cada '+intervalSec+' segundos. 🎱');
+  }
+ });
+ $('adminAutoStop').addEventListener('click',async()=>{
+  if(await adminPost('auto',{enabled:false,intervalSec:Number($('adminAutoInterval').value)})){
+   state.autoIntervalDirty=false;
+   toast('Automático desligado. Você pode continuar manualmente. 🔨');
+  }
+ });
  $('adminDraw').addEventListener('click',async()=>{
   if(state.busy)return;state.busy=true;$('adminDraw').disabled=true;
   try{
@@ -325,7 +366,10 @@ if(window.io){
 }
 setInterval(()=>{
  if(view==='guest' && Date.now()-state.lastMeRefresh>12000)loadMe(false);
- if(view==='admin' && state.admin && Date.now()-state.lastAdminRefresh>12000)loadAdmin(false);
+ if(view==='admin' && state.admin){
+  updateAutoCountdown();
+  if(Date.now()-state.lastAdminRefresh>12000)loadAdmin(false);
+ }
 },1000);
 setInterval(refreshState,15000);
 })();
