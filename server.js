@@ -43,14 +43,18 @@ const gameSchema = new mongoose.Schema({
   lastBall: { type: Number, default: null },
   winner: { type: mongoose.Schema.Types.Mixed, default: null },
   registrationOpen: { type: Boolean, default: true },
-  inviteOnly: { type: Boolean, default: false }
+  inviteOnly: { type: Boolean, default: false },
+  autoEnabled: { type: Boolean, default: false },
+  autoIntervalSec: { type: Number, default: 10 },
+  nextAutoDrawAt: { type: Date, default: null }
 });
 const Guest = mongoose.model('BingoGuest', guestSchema);
 const AccessCode = mongoose.model('BingoCode', codeSchema);
 const Game = mongoose.model('BingoGame', gameSchema);
 function freshGame() {
   return { key:'main', status:'idle', round:1, version:0, pattern:'line', prize:'Prêmio Surpresa #01',
-    drawn:[], lastBall:null, winner:null, registrationOpen:true, inviteOnly:false };
+    drawn:[], lastBall:null, winner:null, registrationOpen:true, inviteOnly:false,
+    autoEnabled:false, autoIntervalSec:10, nextAutoDrawAt:null };
 }
 const doc = x => x && typeof x.toObject === 'function' ? x.toObject() : x;
 const id = x => String(x?._id || x?.id || x || '');
@@ -220,7 +224,9 @@ async function releaseCode(code,device){
 async function state(){
   const [g,p]=await Promise.all([game(),guests()]);
   return { game:{status:g.status,round:g.round,pattern:g.pattern,prize:g.prize,
-    drawn:g.drawn||[],lastBall:g.lastBall,winner:g.winner||null},
+    drawn:g.drawn||[],lastBall:g.lastBall,winner:g.winner||null,
+    autoEnabled:!!g.autoEnabled,autoIntervalSec:g.autoIntervalSec||10,
+    nextAutoDrawAt:g.nextAutoDrawAt||null},
     online:p.length,registered:p.length,databaseConnected:mongoReady,
     registration:{open:g.registrationOpen!==false,inviteOnly:!!g.inviteOnly},
     lastFive:(g.drawn||[]).slice(-5).reverse(),totalDrawn:(g.drawn||[]).length };
@@ -307,7 +313,7 @@ app.post('/api/claim',route(async(req,res)=>{
     return fail(res,message,400);
   }
   const winner={guestId:id(participant),name:participant.name,round:current.round,prize:current.prize};
-  const updated=await changeGame(current,{status:'won',winner});
+  const updated=await changeGame(current,{status:'won',winner,autoEnabled:false,nextAutoDrawAt:null});
   if(!updated)return fail(res,'O bingo foi atualizado. Confira o resultado.',409);
   await incrementWinner(id(participant));
   res.json({ok:true,winner});
@@ -369,37 +375,89 @@ app.post('/api/admin/start',adminOnly,route(async(req,res)=>{
   const pattern=req.body?.pattern===undefined?g.pattern:req.body.pattern;
   if(!['line','full'].includes(pattern))return fail(res,'Escolha linha ou cartela cheia.',400);
   const prize=req.body?.prize===undefined?g.prize:(clean(req.body.prize,60)||'Prêmio Surpresa');
-  if(!await changeGame(g,{status:'live',pattern,prize}))return fail(res,'O estado mudou. Tente novamente.',409);
+  if(!await changeGame(g,{status:'live',pattern,prize,autoEnabled:false,nextAutoDrawAt:null}))return fail(res,'O estado mudou. Tente novamente.',409);
   res.json({ok:true,pattern,prize});await broadcast();
 }));
 app.post('/api/admin/pause',adminOnly,route(async(req,res)=>{
   const g=await game();if(g.status!=='live')return fail(res,'A rodada não está em andamento.');
-  if(!await changeGame(g,{status:'paused'}))return fail(res,'Estado atualizado por outro admin.',409);
+  if(!await changeGame(g,{status:'paused',nextAutoDrawAt:null}))return fail(res,'Estado atualizado por outro admin.',409);
   res.json({ok:true});await broadcast();
 }));
 app.post('/api/admin/resume',adminOnly,route(async(req,res)=>{
   const g=await game();if(g.status!=='paused')return fail(res,'A rodada não está pausada.');
-  if(!await changeGame(g,{status:'live'}))return fail(res,'Estado atualizado por outro admin.',409);
+  const nextAutoDrawAt=g.autoEnabled
+    ? new Date(Date.now()+(g.autoIntervalSec||10)*1000) : null;
+  if(!await changeGame(g,{status:'live',nextAutoDrawAt}))return fail(res,'Estado atualizado por outro admin.',409);
   res.json({ok:true});await broadcast();
 }));
-app.post('/api/admin/draw',adminOnly,route(async(req,res)=>{
-  if(throttle('draw:'+req.ip,process.env.NODE_ENV==='test'?0:500))return fail(res,'Aguarde um instante antes de sortear novamente.',429);
-  const g=await game();
-  if(g.status!=='live')return fail(res,'Inicie ou retome a rodada para sortear.',409);
-  const unused=Array.from({length:75},(_,i)=>i+1).filter(x=>!g.drawn.includes(x));
-  if(!unused.length)return fail(res,'Todas as 75 bolinhas já foram sorteadas.');
+// Manual and automatic draws use the same cryptographic RNG and optimistic game version.
+async function drawFromGame(current,automatic) {
+  if(current.status!=='live')return {error:'Inicie ou retome a rodada para sortear.',status:409};
+  if(!automatic && current.autoEnabled)return {error:'Desative o sorteio automático para usar o botão manual.',status:409};
+  if(automatic && (!current.autoEnabled || !current.nextAutoDrawAt ||
+    Date.now()<new Date(current.nextAutoDrawAt).getTime()))return {error:'Ainda não chegou a hora do próximo sorteio.',status:409};
+  const unused=Array.from({length:75},(_,i)=>i+1).filter(x=>!current.drawn.includes(x));
+  if(!unused.length)return {error:'Todas as 75 bolinhas já foram sorteadas.',status:400};
   const number=unused[crypto.randomInt(unused.length)];
-  const updated=await changeGame(g,{drawn:[...g.drawn,number],lastBall:number});
-  if(!updated)return fail(res,'Outro sorteio ocorreu. Confira o telão.',409);
-  res.json({number,letter:letter(number),drawn:updated.drawn.length});
+  const finalBall=unused.length===1;
+  const updated=await changeGame(current,{
+    drawn:[...current.drawn,number],lastBall:number,
+    autoEnabled:automatic && !finalBall,
+    nextAutoDrawAt:automatic && !finalBall
+      ? new Date(Date.now()+(current.autoIntervalSec||10)*1000):null
+  });
+  if(!updated)return {error:'Outro sorteio ocorreu. Confira o telão.',status:409};
+  await broadcast();
+  return {number,letter:letter(number),drawn:updated.drawn.length};
+}
+app.post('/api/admin/auto',adminOnly,route(async(req,res)=>{
+  const g=await game();
+  if(typeof req.body?.enabled!=='boolean')return fail(res,'Selecione iniciar ou parar o automático.');
+  const interval=Number(req.body?.intervalSec ?? g.autoIntervalSec ?? 10);
+  const validIntervals=process.env.NODE_ENV==='test'?[1,5,10,15,20,30]:[5,10,15,20,30];
+  if(!validIntervals.includes(interval))return fail(res,'Selecione um intervalo permitido de 5 a 30 segundos.');
+  if(req.body.enabled && !['live','paused'].includes(g.status))
+    return fail(res,'Inicie a rodada antes de ativar o sorteio automático.',409);
+  if(req.body.enabled && g.drawn.length>=75)
+    return fail(res,'As 75 bolinhas já foram sorteadas. Inicie outra rodada.',409);
+  const updated=await changeGame(g,{
+    autoEnabled:req.body.enabled,autoIntervalSec:interval,
+    nextAutoDrawAt:req.body.enabled && g.status==='live'
+      ? new Date(Date.now()+interval*1000):null
+  });
+  if(!updated)return fail(res,'O sorteio foi atualizado. Tente novamente.',409);
+  res.json({ok:true,enabled:!!updated.autoEnabled,intervalSec:updated.autoIntervalSec,
+    nextAutoDrawAt:updated.nextAutoDrawAt});
   await broadcast();
 }));
+app.post('/api/admin/draw',adminOnly,route(async(req,res)=>{
+  if(throttle('draw:'+req.ip,process.env.NODE_ENV==='test'?0:500))
+    return fail(res,'Aguarde um instante antes de sortear novamente.',429);
+  const result=await drawFromGame(await game(),false);
+  if(result.error)return fail(res,result.error,result.status);
+  res.json(result);
+}));
+let autoTickBusy=false;
+setInterval(async()=>{
+  if(autoTickBusy)return;
+  autoTickBusy=true;
+  try{
+    const g=await game();
+    if(g.status==='live' && g.autoEnabled && g.nextAutoDrawAt &&
+      Date.now()>=new Date(g.nextAutoDrawAt).getTime()) {
+      const result=await drawFromGame(g,true);
+      if(result.error && result.status!==409)console.warn('Sorteio automático:',result.error);
+    }
+  }catch(e){console.error('Erro no sorteio automático:',e);}
+  finally{autoTickBusy=false;}
+},350).unref();
 app.post('/api/admin/next',adminOnly,route(async(req,res)=>{
   const g=await game();
   if(g.status==='resetting')return fail(res,'As cartelas ainda estão sendo preparadas.',409);
   if(['live','paused'].includes(g.status))return fail(res,'Pause e finalize a rodada antes de iniciar outra. Use Encerrar.',409);
   const next=g.round+1;
   if(!await changeGame(g,{status:'resetting',round:next,drawn:[],lastBall:null,winner:null,
+    autoEnabled:false,nextAutoDrawAt:null,
     prize:'Prêmio Surpresa #'+String(next).padStart(2,'0')}))
     return fail(res,'O estado foi alterado. Tente novamente.',409);
   await newCards(next);
@@ -410,7 +468,7 @@ app.post('/api/admin/next',adminOnly,route(async(req,res)=>{
 app.post('/api/admin/finish',adminOnly,route(async(req,res)=>{
   const g=await game();
   if(!['live','paused'].includes(g.status))return fail(res,'Não há rodada ativa.');
-  if(!await changeGame(g,{status:'finished'}))return fail(res,'Estado atualizado.',409);
+  if(!await changeGame(g,{status:'finished',autoEnabled:false,nextAutoDrawAt:null}))return fail(res,'Estado atualizado.',409);
   res.json({ok:true});await broadcast();
 }));
 app.post('/api/admin/reset',adminOnly,route(async(req,res)=>{
