@@ -110,6 +110,22 @@
            <div class="panel-heading"><h2>🎱 Sorteio ao vivo</h2><span id="adminLiveChip" class="status-pill">Aguardando</span></div>
            <div class="draw-stage"><div id="adminBall" class="draw-ball">?</div><div class="draw-stage-text"><span>Última bolinha</span><strong id="adminLastBall">Aguardando</strong><p id="adminPrizeDisplay">Prêmio Surpresa #01</p><div id="adminEffectivePattern" class="admin-rule-display">🏆 Regra: linha, coluna ou diagonal</div></div></div>
            <button type="button" class="btn pink wide draw-main-btn" id="adminDraw" disabled>▶ SORTEAR PRÓXIMA BOLINHA</button>
+           <div class="auto-draw-panel" aria-label="Sorteio automático">
+             <div class="auto-draw-header"><strong>⚡ Sorteio automático</strong><span class="auto-draw-status" id="adminAutoStatus">Modo manual</span></div>
+             <div class="auto-draw-actions">
+               <label for="adminAutoInterval">Intervalo por bolinha</label>
+               <select id="adminAutoInterval">
+                 <option value="5">5 segundos</option>
+                 <option value="10" selected>10 segundos</option>
+                 <option value="15">15 segundos</option>
+                 <option value="20">20 segundos</option>
+                 <option value="30">30 segundos</option>
+               </select>
+               <button type="button" class="btn purple" id="adminAutoStart" disabled>▶ Iniciar automático</button>
+               <button type="button" class="btn outline" id="adminAutoStop" disabled>■ Parar automático</button>
+             </div>
+             <p class="auto-draw-next" id="adminAutoCountdown">O botão manual permanece disponível quando o automático estiver desligado.</p>
+           </div>
            <div class="draw-controls"><button type="button" class="btn green" id="adminStart">▶ Iniciar rodada</button><button type="button" class="btn blue" id="adminPause" disabled>⏸ Pausar</button><button type="button" class="btn purple" id="adminResume" disabled>▶ Continuar</button><button type="button" class="btn orange" id="adminFinish" disabled>■ Encerrar</button></div>
            <div class="draw-controls secondary-controls"><button type="button" class="btn outline" id="adminNext">↻ Nova rodada / Novas cartelas</button></div>
            <div class="notice muted">O sorteio é feito no servidor, sem repetir números. Ao iniciar uma nova rodada, cada participante recebe outra cartela.</div>
