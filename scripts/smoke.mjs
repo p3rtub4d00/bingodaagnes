@@ -190,6 +190,58 @@ try{
  assert.equal(fullWinner.result.winner.name,'Alice');
  assert.equal((await call('/api/state')).result.game.status,'won');
 
- console.log('✅ Bingo smoke passed: 75 unique balls, cards, one-device login, invite codes, line validation, 24/24 full-card validation, admin choice on start, winner and new rounds.');
+ // Sorteio automático: não ativa antes de iniciar, alterna manual/auto,
+ // pausa sem sortear, retoma, para e devolve o controle ao botão manual.
+ const fourthRound=await call('/api/admin/next',{},admin);
+ assert.equal(fourthRound.response.status,200);
+ const tooEarlyAuto=await call('/api/admin/auto',{enabled:true,intervalSec:1},admin);
+ assert.equal(tooEarlyAuto.response.status,409,'não pode iniciar automático sem rodada ativa');
+ const fourthStart=await call('/api/admin/start',{pattern:'line'},admin);
+ assert.equal(fourthStart.response.status,200);
+ const badInterval=await call('/api/admin/auto',{enabled:true,intervalSec:3},admin);
+ assert.equal(badInterval.response.status,400,'intervalos não previstos devem ser rejeitados');
+ const autoOn=await call('/api/admin/auto',{enabled:true,intervalSec:1},admin);
+ assert.equal(autoOn.response.status,200);
+ assert.equal(autoOn.result.enabled,true);
+ const manualDuringAuto=await call('/api/admin/draw',{},admin);
+ assert.equal(manualDuringAuto.response.status,409,'modo manual não concorre com automático');
+ async function untilDrawn(min,limitMs=4500){
+  const deadline=Date.now()+limitMs;
+  while(Date.now()<deadline){
+   const v=await call('/api/state');
+   if(v.result.game.drawn.length>=min)return v.result;
+   await new Promise(done=>setTimeout(done,150));
+  }
+  throw new Error('Sorteio automático não produziu '+min+' bolinhas');
+ }
+ const autoProgress=await untilDrawn(1);
+ assert.equal(autoProgress.game.autoEnabled,true);
+ assert.equal(autoProgress.game.autoIntervalSec,1);
+ const autoPaused=await call('/api/admin/pause',{},admin);
+ assert.equal(autoPaused.response.status,200);
+ const pausedAmount=(await call('/api/state')).result.game.drawn.length;
+ await new Promise(done=>setTimeout(done,1550));
+ const stillPaused=(await call('/api/state')).result;
+ assert.equal(stillPaused.game.drawn.length,pausedAmount,'pausa não pode sortear novas bolinhas');
+ assert.equal(stillPaused.game.autoEnabled,true,'pausa deve preservar o modo automático para retomar');
+ const autoResumed=await call('/api/admin/resume',{},admin);
+ assert.equal(autoResumed.response.status,200);
+ await untilDrawn(pausedAmount+1);
+ const autoStop=await call('/api/admin/auto',{enabled:false,intervalSec:1},admin);
+ assert.equal(autoStop.response.status,200);
+ assert.equal(autoStop.result.enabled,false);
+ const stoppedAmount=(await call('/api/state')).result.game.drawn.length;
+ await new Promise(done=>setTimeout(done,1550));
+ assert.equal((await call('/api/state')).result.game.drawn.length,stoppedAmount,
+   'parar automático impede outros sorteios');
+ const manualAfterAuto=await call('/api/admin/draw',{},admin);
+ assert.equal(manualAfterAuto.response.status,200,'sorteio manual deve funcionar depois do automático');
+ const endAutoRound=await call('/api/admin/finish',{},admin);
+ assert.equal(endAutoRound.response.status,200);
+ const finishedState=(await call('/api/state')).result;
+ assert.equal(finishedState.game.autoEnabled,false);
+ assert.equal(finishedState.game.nextAutoDrawAt,null);
+
+ console.log('✅ Bingo smoke passed: 75 unique balls, cards, one-device login, invite codes, line and full validation, manual/auto draws, pause, resume, stop and finish.');
 }catch(e){console.error('❌ Falha no bingo:',e);process.exitCode=1;}
 finally{child.kill('SIGTERM');}
